@@ -16,7 +16,7 @@ local calls = {}
 -- https://docs.fivemerr.com/integrations/mdt-scripts/ps-mdt
 -- Images for mug shots will be uploaded here and will not expire.
 local FivemerrMugShot = 'https://api.fivemerr.com/v1/media/images'
-local FivemerrApiKey = 'YOUR API KEY HERE'
+local FivemerrApiKey = 'dca02280399633b4d474012ab748ab08'
 
 --------------------------------
 -- NOT RECOMMENDED. WE RECOMMEND USING Fivemerr.
@@ -26,11 +26,11 @@ local MugShotWebhook = ''
 
 -- Clock-in notifications for duty. Add a Discord webhook.
 -- Command /mdtleaderboard, will display top players per clock-in hours.
-local ClockinWebhook = ''
+local ClockinWebhook = 'https://discord.com/api/webhooks/844127062502539274/nohEumPQrv2r_AMHwLAMaFdetct6aIeZynDRAVU8s-upl3OhrklbvVYfYfjoXPg5Nvhq'
 
 -- Incident and Incident editting. Add a Discord webhook.
 -- Incident Author, Title, and Report will display in webhook post.
-local IncidentWebhook = ''
+local IncidentWebhook = 'https://discord.com/api/webhooks/844127062502539274/nohEumPQrv2r_AMHwLAMaFdetct6aIeZynDRAVU8s-upl3OhrklbvVYfYfjoXPg5Nvhq'
 --------------------------------
 
 QBCore.Functions.CreateCallback('ps-mdt:server:MugShotWebhook', function(source, cb)
@@ -432,6 +432,30 @@ QBCore.Functions.CreateCallback('mdt:server:GetProfileData', function(source, cb
             TriggerClientEvent("QBCore:Notify", src, 'The citizen does not have an apartment.', 'error')
             print('The citizen does not have an apartment. Set Config.UsingDefaultQBApartments to false.')
         end
+	else
+		local propertyData = GetPlayerPropertiesByCitizenId(target.citizenid)
+		local apartmentList = {}
+		local apartmentTestData
+		local apartmentListTest = {}
+		local results = extractIDAndEnterCoords(propertyData)
+
+	--gobacktopoint
+		for _, result in ipairs(results) do
+			--print("ID:", result.id)
+			--print("Enter Coords:", result.enterCoords.x, result.enterCoords.y, result.enterCoords.z)
+			--print("Nice Name: ", result.addressText)
+			table.insert(apartmentList, result.addressText .. ' No# (' .. result.id .. ')')
+			table.insert(apartmentListTest, result.id .. ',' .. result.enterCoords.x .. ','  .. result.enterCoords.y .. ',' .. result.enterCoords.z )
+			if #apartmentList > 0 then
+				apartmentData = table.concat(apartmentListTest, '| ')
+				apartmentTestData = table.concat(apartmentListTest,'|')
+			else
+				TriggerClientEvent("QBCore:Notify", src, 'The citizen does not have any property.', 'error')
+			end
+		end
+		
+		--local propertyEntryPoint = vector3(propertyLocationData.enterCoords.x,propertyLocationData.enterCoords.y,propertyLocationData.enterCoords.z)
+
     end
 
 	local person = {
@@ -441,6 +465,7 @@ QBCore.Functions.CreateCallback('mdt:server:GetProfileData', function(source, cb
 		job = job.label,
 		grade = grade.name,
 		apartment = apartmentData,
+		apartmenttest = apartmentTestData,
 		pp = ProfPic(target.charinfo.gender),
 		licences = licencesdata,
 		dob = target.charinfo.birthdate,
@@ -1896,7 +1921,8 @@ local function giveCitationItem(src, citizenId, fine, incidentId)
 	Player.Functions.AddItem('mdtcitation', 1, false, info)
 	TriggerClientEvent('QBCore:Notify', src, PlayerName.." (" ..citizenId.. ") received a citation!")
 	if Config.QBBankingUse then 
-		exports['qb-banking']:AddMoney(Officer.PlayerData.job.name, fine) 
+		exports['qb-management']:AddMoney(Officer.PlayerData.job.name, fine)
+		--exports['qb-banking']:AddMoney(Officer.PlayerData.job.name, fine) 
 	end
 	TriggerClientEvent('inventory:client:ItemBox', Player.PlayerData.source, QBCore.Shared.Items['mdtcitation'], "add")
 	TriggerEvent('mdt:server:AddLog', "A Fine was writen by "..OfficerFullName.." and was sent to "..PlayerName..", the Amount was $".. fine ..". (ID: "..incidentId.. ")")
@@ -2063,7 +2089,7 @@ end
 function GetPlayerPropertiesByCitizenId(citizenid)
     local properties = {}
 
-    local result = MySQL.Sync.fetchAll("SELECT * FROM properties WHERE owner_citizenid = @citizenid", {
+    local result = MySQL.Sync.fetchAll("SELECT * FROM owned_houses WHERE owner = @citizenid", {
         ['@citizenid'] = citizenid
     })
 
@@ -2073,7 +2099,7 @@ function GetPlayerPropertiesByCitizenId(citizenid)
         end
     end
 
-    return properties
+    return result
 end
 
 function generateMessageFromResult(result)
@@ -2138,3 +2164,34 @@ if Config.InventoryForWeaponsImages == "ox_inventory" and Config.RegisterWeapons
 		})
 	end
 end
+
+function extractIDAndEnterCoords(data)
+    local results = {}
+
+    for _, entry in ipairs(data) do
+        local coords = entry["coords"]
+        if coords then
+            -- Decode the JSON string to a Lua table
+            local decodedCoords = json.decode(coords)
+            if decodedCoords and decodedCoords.enterCoords then
+				--local addressTextT = GetStreetAndZone(decodedCoords.enterCoords)
+                table.insert(results, {
+                    id = entry["id"],
+                    enterCoords = decodedCoords.enterCoords,
+					addressText = 'House'
+                })
+            end
+        end
+    end
+
+    return results
+end
+
+function GetStreetAndZone(coords)
+	print(coords.x, coords.y, coords.z)
+    local zone = GetNameOfZone(coords.x, coords.y, coords.z)
+    local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(coords.x, coords.y, coords.z))
+    return street .. ", " .. zone
+end
+
+
