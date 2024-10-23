@@ -322,7 +322,24 @@ RegisterNUICallback("getProfileData", function(data, cb)
     local result = getProfileDataPromise(id)
     local vehicles = result.vehicles
     local licenses = result.licences
-
+    local apartment = result['apartment']
+    --print(apartment)
+    
+    if apartment then 
+        local convertedstringintotable = parseStringToTable(apartment)
+        
+    
+        local adjustedApartmentData = {}
+        for _, result in ipairs(convertedstringintotable) do
+            niceHouseName = "#".. result.id .. ' ' .. GetStreetAndZone(vector3(result.x, result.y,result.z))
+            --print("#".. result.id .. ' ' .. GetStreetAndZone(vector3(result.x, result.y,result.z)))
+            table.insert(adjustedApartmentData,niceHouseName)
+        end
+        if #adjustedApartmentData > 0 then
+            apartmentData = table.concat(adjustedApartmentData, ', ')
+        end
+        result['apartment'] = apartmentData
+    end
     for i=1,#vehicles do
         local vehicle=result.vehicles[i]
         local vehData = QBCore.Shared.Vehicles[vehicle['vehicle']]
@@ -1117,4 +1134,36 @@ if Config.UseWolfknightRadar == true then
             QBCore.Functions.Notify("Traffic Stop Cooldown active!", "error") 
         end
     end)
+end
+
+function GetStreetAndZone(coords)
+	--print(coords.x, coords.y, coords.z)
+    local zone = GetLabelText(GetNameOfZone(coords.x, coords.y, coords.z))
+    local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(coords.x, coords.y, coords.z))
+    return street .. ", " .. zone
+end
+
+function parseStringToTable(inputString)
+    local resultTable = {}
+    
+    -- Split the string by pipe symbol (|) to get each entry
+    local entries = {}
+    for entry in string.gmatch(inputString, "[^|]+") do
+        table.insert(entries, entry)
+    end
+
+    -- Loop through each entry and extract the values (id, x, y, z)
+    for index, entry in ipairs(entries) do
+        local id, x, y, z = entry:match("([^,]+),([^,]+),([^,]+),([^,]+)")
+        
+        -- Insert the parsed values into the resultTable
+        table.insert(resultTable, {
+            id = tonumber(id),
+            x = tonumber(x),
+            y = tonumber(y),
+            z = tonumber(z)
+        })
+    end
+
+    return resultTable
 end
