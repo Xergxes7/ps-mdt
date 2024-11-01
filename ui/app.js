@@ -40,6 +40,7 @@ const PoliceJobs = {
   ['sapr']: true,
   ['doc']: true,
   ['lssd']: true,
+  ['doj']: false,
 }
 
 const AmbulanceJobs = {
@@ -47,8 +48,10 @@ const AmbulanceJobs = {
 }
 
 const DojJobs = {
-  ['lawyer']: true,
-  ['judge']: true
+  ['lawyer2']: true,
+  ['doj']: true,
+  ['lawyer1']: true,
+  ['cityhall']: true,
 }
 
 const MONTH_NAMES = [
@@ -774,7 +777,8 @@ $(document).ready(() => {
           <p>&nbsp;</p>
           <p><strong>🧍 Hostage:</strong> [Name Here]</p>
           <p>&nbsp;</p>
-          <p><strong>🗄️ Evidence Location:</strong> Stash # | Drawer #</p>
+          <p><strong>🗄️ Save Incident to be able to open Evidence Locker:</strong></p>
+          <p><strong>🗄️ Additional Evidence Location:</strong> Stash # | Drawer #</p>
           <p>&nbsp;</p>
           <p><strong>🔪 Weapons/Items Confiscated:</strong></p>
           <p><em>· [Insert List Here]</em></p>
@@ -841,6 +845,10 @@ $(document).ready(() => {
       $(".manage-incidents-civilians-add-btn").css(
         "pointer-events",
         "auto"
+      );
+      $(".manage-incidents-evidence-open-btn").css(
+        "pointer-events",
+        "auto",
       );
       $(".manage-incidents-evidence-add-btn").css(
         "pointer-events",
@@ -1243,6 +1251,20 @@ $(document).ready(() => {
     }
   };
   $(".manage-incidents-tags-add-btn").click(function () {
+     if ($(".tag-incident-input")[0]) {
+       $(this).removeClass("fa-minus").addClass("fa-plus");
+       $(".tag-incident-input").remove();
+     } else {
+       $(this).removeClass("fa-plus").addClass("fa-minus");
+       $(".manage-incidents-tags-holder").prepend(
+         `<span contenteditable="true" class="tag-incident-input"></span>`
+       );
+     }
+    $(".close-all").css("filter", "none");
+    //let id = $(".manage-incidents-editing-title").data("id");
+    //OpenEvidenceLocker(id)
+  });
+  $(".manage-incidents-evidence-open-btn").click(function () {
     // if ($(".tag-incident-input")[0]) {
     //   $(this).removeClass("fa-minus").addClass("fa-plus");
     //   $(".tag-incident-input").remove();
@@ -1254,7 +1276,9 @@ $(document).ready(() => {
     // }
     $(".close-all").css("filter", "none");
     let id = $(".manage-incidents-editing-title").data("id");
-    OpenEvidenceLocker(id)
+    if (id != 0){
+      OpenEvidenceLocker(id)
+    }
   });
 
   function OpenEvidenceLocker(id) {
@@ -3041,7 +3065,7 @@ $(document).ready(() => {
           },
         ];
       }
-      openContextMenu(e, args);
+      //openContextMenu(e, args);
     }
   });
 
@@ -3904,7 +3928,7 @@ $(document).ready(() => {
       color9: "#8A8D91",
       color10: "#444444",
       image: "img/ems_badge.webp",
-      name: "PILLBOX HILL MEDICAL CENTER",
+      name: "DEPARTMENT OF HEALTH",
     },
     doj: {
       color1: "#553a1e",
@@ -4232,10 +4256,16 @@ window.addEventListener("message", function (event) {
             activeInfoJob = `<div class="unit-job active-info-job-sasp">SAST</div>`;
           } else if(unit.unitType == "sapr")  { saspCount++;
             activeInfoJob = `<div class="unit-job active-info-job-sapr">SAPR</div>`;
-          } else if(unit.unitType == "judge")  { dojCount++;
+          } else if(unit.unitType == "doj")  { dojCount++;
             activeInfoJob = `<div class="unit-job active-info-job-doj">DOJ</div>`;
           } else if(unit.unitType == "doc")  { dojCount++;
             activeInfoJob = `<div class="unit-job active-info-job-doc">DOC</div>`;
+          } else if(unit.unitType == "lawyer1")  { dojCount++;
+            activeInfoJob = `<div class="unit-job active-info-job-doc">LAW</div>`;
+          } else if(unit.unitType == "cityhall")  { dojCount++;
+            activeInfoJob = `<div class="unit-job active-info-job-doc">Cityhall</div>`;
+          } else if(unit.unitType == "lawyer2")  { dojCount++;
+            activeInfoJob = `<div class="unit-job active-info-job-doc">LAW</div>`;
           }
         } else if (AmbulanceJobs[unit.unitType] !== undefined) {
           activeInfoJob = `<div class="unit-job active-info-job-ambulance">Ambulance</div>`
@@ -4719,6 +4749,10 @@ window.addEventListener("message", function (event) {
         "auto"
       );
       $(".manage-incidents-civilians-add-btn").css(
+        "pointer-events",
+        "auto"
+      );
+      $(".manage-incidents-evidence-open-btn").css(
         "pointer-events",
         "auto"
       );
@@ -5232,6 +5266,10 @@ window.addEventListener("message", function (event) {
         "auto"
       );
       $(".manage-incidents-civilians-add-btn").css(
+        "pointer-events",
+        "auto"
+      );
+      $(".manage-incidents-evidence-open-btn").css(
         "pointer-events",
         "auto"
       );

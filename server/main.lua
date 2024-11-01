@@ -82,33 +82,39 @@ RegisterServerEvent("ps-mdt:dispatchStatus", function(bool)
 	isDispatchRunning = bool
 end)
 
-if Config.UseWolfknightRadar == true then
-	RegisterNetEvent("wk:onPlateScanned")
-	AddEventHandler("wk:onPlateScanned", function(cam, plate, index)
-		local src = source
-		local Player = QBCore.Functions.GetPlayer(src)
-		local PlayerData = GetPlayerData(src)
-		local vehicleOwner = GetVehicleOwner(plate)
-		local bolo, title, boloId = GetBoloStatus(plate)
-		local warrant, owner, incidentId = GetWarrantStatus(plate)
-		local driversLicense = PlayerData.metadata['licences'].driver
+RegisterNetEvent("wk:onPlateScanned")
+AddEventHandler("wk:onPlateScanned", function(cam, plate, index)
+	--print('PLATE SCANNED' .. plate)
+	plate = string.gsub(plate, "^%s*(.-)%s*$", "%1")
+	--print('PLATE SCANNED' .. plate)
+	if Config.UseWolfknightRadar == true then
+			
+			local src = source
+			local Player = QBCore.Functions.GetPlayer(src)
+			local PlayerData = GetPlayerData(src)
+			local vehicleOwner = GetVehicleOwner(plate)
+			if not vehicleOwner then vehicleOwner = 'REDACTED' end
+			local bolo, title, boloId = GetBoloStatus(plate)
+			local warrant, owner, incidentId = GetWarrantStatus(plate)
+			local driversLicense = PlayerData.metadata['licences'].driver
+			--print(bolo)
+			if bolo == true then
+				TriggerClientEvent('QBCore:Notify', src, 'BOLO ID: '..boloId..' | Title: '..title..' | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
+			end
+			if warrant == true then
+				TriggerClientEvent('QBCore:Notify', src, 'WANTED - INCIDENT ID: '..incidentId..' | Registered Owner: '..owner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
+			end
 
-		if bolo == true then
-			TriggerClientEvent('QBCore:Notify', src, 'BOLO ID: '..boloId..' | Title: '..title..' | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
-		end
-		if warrant == true then
-			TriggerClientEvent('QBCore:Notify', src, 'WANTED - INCIDENT ID: '..incidentId..' | Registered Owner: '..owner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
-		end
+			if Config.PlateScanForDriversLicense and driversLicense == false and vehicleOwner then
+				TriggerClientEvent('QBCore:Notify', src, 'NO DRIVERS LICENCE | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
+			end
 
-		if Config.PlateScanForDriversLicense and driversLicense == false and vehicleOwner then
-			TriggerClientEvent('QBCore:Notify', src, 'NO DRIVERS LICENCE | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
-		end
+			if bolo or warrant or (Config.PlateScanForDriversLicense and not driversLicense) and vehicleOwner then
+				TriggerClientEvent("wk:togglePlateLock", src, cam, true, 1)
+			end
 
-		if bolo or warrant or (Config.PlateScanForDriversLicense and not driversLicense) and vehicleOwner then
-			TriggerClientEvent("wk:togglePlateLock", src, cam, true, 1)
-		end
-	end)
-end
+	end
+end)
 
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
@@ -1047,20 +1053,31 @@ QBCore.Functions.CreateCallback('mdt:server:SearchVehicles', function(source, cb
 	if Player then
 		local JobType = GetJobType(Player.PlayerData.job.name)
 		if JobType == 'police' or JobType == 'doj' then
-			local vehicles = MySQL.query.await("SELECT pv.id, pv.citizenid, pv.plate, pv.vehicle, pv.mods, pv.state, p.charinfo FROM `player_vehicles` pv LEFT JOIN players p ON pv.citizenid = p.citizenid WHERE LOWER(`plate`) LIKE :query OR LOWER(`vehicle`) LIKE :query LIMIT 25", {
+			local vehicles = MySQL.query.await("SELECT pv.id, pv.citizenid, pv.plate, pv.vehicle, pv.mods, pv.state, p.charinfo,pv.garage_id,pv.in_garage FROM `player_vehicles` pv LEFT JOIN players p ON pv.citizenid = p.citizenid WHERE LOWER(`plate`) LIKE :query OR LOWER(`vehicle`) LIKE :query LIMIT 25", {
 				query = string.lower('%'..sentData..'%')
 			})
 
 			if not next(vehicles) then cb({}) return end
 
 			for _, value in ipairs(vehicles) do
-				if value.state == 0 then
+				--[[if value.state == 0 then
 					value.state = "Out"
 				elseif value.state == 1 then
 					value.state = "Garaged"
 				elseif value.state == 2 then
 					value.state = "Impounded"
+				end]]
+				if not value.in_garage then
+					value.state = "Out"
+					--print('OUT')
+				elseif value.in_garage == 1 and not string.find(string.lower(value.garage_id), "impound") then
+					value.state = "Garaged"
+					--print('Garaged')
+				elseif value.in_garage and string.find(string.lower(value.garage_id), "impound") then
+					value.state = "Impounded"
+					--print('Impounded')
 				end
+
 
 				value.bolo = false
 				local boloResult = GetBoloStatus(value.plate)
@@ -1089,7 +1106,7 @@ QBCore.Functions.CreateCallback('mdt:server:SearchVehicles', function(source, cb
 	end
 
 end)
-
+ 
 RegisterNetEvent('mdt:server:getVehicleData', function(plate)
 	if plate then
 		local src = source
@@ -1100,7 +1117,11 @@ RegisterNetEvent('mdt:server:getVehicleData', function(plate)
 				local vehicle = MySQL.query.await("select pv.*, p.charinfo from player_vehicles pv LEFT JOIN players p ON pv.citizenid = p.citizenid where pv.plate = :plate LIMIT 1", { plate = string.gsub(plate, "^%s*(.-)%s*$", "%1")})
 				if vehicle and vehicle[1] then
 					vehicle[1]['impound'] = false
-					if vehicle[1].state == 2 then
+					
+					--print(vehicle[1].in_garage)
+					--print(vehicle[1].garage_id)
+					--print(string.find(string.lower(vehicle[1].garage_id), "impound"))
+					if vehicle[1].in_garage and string.find(string.lower(vehicle[1].garage_id), "impound") then
 						vehicle[1]['impound'] = true
 					end
 
@@ -1188,7 +1209,7 @@ RegisterNetEvent('mdt:server:saveVehicleInfo', function(dbid, plate, imageurl, n
 									FreezeEntityPosition(vehicle, true)
 									impound[#impound+1] = data
 
-									TriggerClientEvent("police:client:ImpoundVehicle", src, true, fee)
+									TriggerClientEvent("jg-advancedgarages:client:show-impound-form", src, true, fee)
 								end)
 								-- Read above comment
 							end
@@ -1740,7 +1761,7 @@ RegisterNetEvent('mdt:server:impoundVehicle', function(sentInfo, sentVehicle)
 							FreezeEntityPosition(vehicle, true)
 							impound[#impound+1] = data
 
-							TriggerClientEvent("police:client:ImpoundVehicle", src, true, fee)
+							TriggerClientEvent("jg-advancedgarages:client:show-impound-form", src, true, fee)
 						end)
 					end
 				end
@@ -1828,6 +1849,7 @@ function GetVehicleOwner(plate)
 	local result = MySQL.query.await('SELECT plate, citizenid, id FROM player_vehicles WHERE plate = @plate', {['@plate'] = plate})
 	if result and result[1] then
 		local citizenid = result[1]['citizenid']
+		--print(citizenid)
 		local Player = QBCore.Functions.GetPlayerByCitizenId(citizenid)
 		local owner = Player.PlayerData.charinfo.firstname.." "..Player.PlayerData.charinfo.lastname
 		return owner
@@ -2188,7 +2210,7 @@ function extractIDAndEnterCoords(data)
 end
 
 function GetStreetAndZone(coords)
-	print(coords.x, coords.y, coords.z)
+	--print(coords.x, coords.y, coords.z)
     local zone = GetNameOfZone(coords.x, coords.y, coords.z)
     local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(coords.x, coords.y, coords.z))
     return street .. ", " .. zone

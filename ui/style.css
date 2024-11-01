@@ -2448,9 +2448,30 @@ span.tag-input[contenteditable]:empty::before {
     margin-top: 15px;
     margin-bottom: 0px;
     margin-right: 0px;
-    width: 95%;
+    width: 80%;
     align-items: center;
     user-select: none;
+}
+
+.manage-incidents-evidence-open-btn {
+    background-color: var(--color-4);
+    color: white;
+    font-size: 18px;
+    font-weight: bolder;
+    padding-top: 7.25px;
+    padding-bottom: 7.25px;
+    margin: auto;
+    margin-top: 15px;
+    margin-bottom: 0px;
+    margin-left: 5px;
+    margin-right: 0px;
+    width: 10%;
+    text-align: center;
+    pointer-events: none;
+}
+
+.manage-incidents-evidence-open-btn:hover {
+    background-color: var(--color-3);
 }
 
 .manage-incidents-evidence-add-btn {
