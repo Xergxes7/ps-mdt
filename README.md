@@ -1,4 +1,4 @@
-# Project Sloth MDT
+# Project Sloth MDT - Customised
 
 For all support questions, ask in our [Discord](https://www.discord.gg/projectsloth) support chat. Do not create issues if you need help. Issues are for bug reporting and new features only.
 
@@ -9,6 +9,12 @@ For all support questions, ask in our [Discord](https://www.discord.gg/projectsl
 - [oxmysql](https://github.com/overextended/oxmysql)
 - [qb-apartments](https://github.com/qbcore-framework/qb-apartments) | [Config](https://github.com/Project-Sloth/ps-mdt/blob/0ce2ab88d2ca7b0a49abfb3f7f8939d0769c7b73/shared/config.lua#L3) available to enable or disable. 
 - [qb-communityservice](https://github.com/Zepherlah/qb-community-service) - If you're planning on sending to community service. 
+- [qb_tk_hosing](https://forum.cfx.re/t/qb-qb-tk-housing-housing-system/5184700) - This version uses this housing system
+- [pickle prisons](https://forum.cfx.re/t/free-pickles-prisons-jail-system-breakouts-work-activities/5105310) - This version uses this prison system
+- [jg-advancedgarages](https://jgscripts.com/scripts/advanced-garages) - This version uses this garage system
+- [ap-court](https://tebex.apscripts.store/) - This version is setup to use jobs related to this script(Config.lua is not setup though)
+- [ap-government](https://tebex.apscripts.store/) - This version is setup to use jobs related to this script(Config.lua is not setup though)
+- [qb-inventory](https://github.com/qbcore-framework/qb-inventory) - The integrated evidence lockers require QB-Inventory to be used
 
 # Installation
 * Download ZIP
