@@ -293,6 +293,7 @@ RegisterNetEvent('mdt:client:searchProfile', function(sentData, isLimited)
 end)
 
 RegisterNUICallback("saveProfile", function(data, cb)
+    --print(json.encode(data))
     local profilepic = data.pfp
     local information = data.description
     local cid = data.id
@@ -322,32 +323,7 @@ RegisterNUICallback("getProfileData", function(data, cb)
     local result = getProfileDataPromise(id)
     local vehicles = result.vehicles
     local licenses = result.licences
-    local apartment = result['apartment']
-    --print(apartment)
-    
-    if apartment then 
-        local convertedstringintotable = parseStringToTable(apartment)
-        local properties = {}
-        local adjustedApartmentData = {}
-        for _, result in ipairs(convertedstringintotable) do
-            
-            niceHouseName = "#".. result.id .. ' ' .. GetStreetAndZone(vector3(result.x, result.y,result.z))
-            local propertyInfo = {
-                coords = result.x .. '===' .. result.y,
-                label = niceHouseName
-            }
-            --print("#".. result.id .. ' ' .. GetStreetAndZone(vector3(result.x, result.y,result.z)))
-            table.insert(adjustedApartmentData,niceHouseName)
-            table.insert(properties,propertyInfo)
-            
-        end
-        if #adjustedApartmentData > 0 then
-            apartmentData = table.concat(adjustedApartmentData, ', ')
-        end
-        result['apartment'] = apartmentData
-        result['properties'] = properties
-        --print(json.encode( result['properties']))
-    end
+
     for i=1,#vehicles do
         local vehicle=result.vehicles[i]
         local vehData = QBCore.Shared.Vehicles[vehicle['vehicle']]
@@ -490,15 +466,11 @@ end)
 
 
 RegisterNUICallback('SetHouseLocation', function(data, cb)
-    local coords = {
-        x = tonumber(data.coord[1]),
-        y = tonumber(data.coord[2]),
-    }
-    
-    --[[for word in data.coord[1]:gmatch('[^,%s]+') do
+    local coords = {}
+    for word in data.coord[1]:gmatch('[^,%s]+') do
         coords[#coords+1] = tonumber(word)
-    end]]
-    SetNewWaypoint(coords.x, coords.y)
+    end
+    SetNewWaypoint(coords[1], coords[2])
     QBCore.Functions.Notify('GPS has been set!', 'success')
 end)
 
@@ -1153,6 +1125,7 @@ if Config.UseWolfknightRadar == true then
         end
     end)
 end
+
 
 function GetStreetAndZone(coords)
 	--print(coords.x, coords.y, coords.z)

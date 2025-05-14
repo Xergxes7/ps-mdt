@@ -24,9 +24,9 @@ var DispatchNum = 0;
 var playerJob = "";
 let rosterLink  = "";
 let sopLink = "";
-
+const licenseTypesGlobal = ['driver', 'business', 'weapon', 'pilot', 'fishing'];
 //Set this to false if you don't want to show the send to community service button on the incidents page
-const canSendToCommunityService = false
+const canSendToCommunityService = true
 
 let impoundChanged = false;
 
@@ -92,8 +92,8 @@ function getFormattedDate(date, prefomattedDate = false, hideYear = false) {
 }
 
 var quotes = [
-  'Project Sloth On Top!',
-  'A Discord rewrite fixes everything...',
+  'Horizon RP On Top!',
+  'I Like Turtles...',
   'Does anyone even read these?',
   'The best way to predict your future is to create it.',
   'Believe you can and you\'re halfway there.',
@@ -772,22 +772,46 @@ $(document).ready(() => {
     function () {
       let template = `
       <div style="color: white;">
-          <p><strong>📝 Summary:</strong></p>
-          <p><em>[Insert Report Summary Here]</em></p>
-          <p>&nbsp;</p>
-          <p><strong>🧍 Hostage:</strong> [Name Here]</p>
-          <p>&nbsp;</p>
-          <p><strong>🗄️ Save Incident to be able to open Evidence Locker:</strong></p>
-          <p><strong>🗄️ Additional Evidence Location:</strong> Stash # | Drawer #</p>
-          <p>&nbsp;</p>
-          <p><strong>🔪 Weapons/Items Confiscated:</strong></p>
-          <p><em>· [Insert List Here]</em></p>
-          <p>&nbsp;</p>
-          <p>-----</p>
-          <p><strong style="background-color: var(--color-1);">💸 Fine:</strong></p>
-          <p>&nbsp;</p>
-          <p><strong>⌚ Sentence:</strong></p>
-          <p>-----</p>
+          <p><strong>🏛️ Police Department Name: </strong> [LSPD/State Troopers] </p>
+          <br>
+          <p><strong>📅 Date of Report: </strong> [MM/DD/YYYY] </p>
+          <br>
+          <p><strong>🪪 Incident Type: </strong> [e.g., Theft, Assault, Burglary] </p>
+          <br>
+          <p><strong>📍 Incident Location: </strong> [Address/Location Name/Postal] </p>
+          <br>
+          <p><strong>🕓 Date and Time of Incident: </strong> [MM/DD/YYYY, Time] </p>
+          <br>
+          <p>-------------------------</p>
+          <p><h2>📝 Incident Summary: </h2></p>
+          <p><em>[Provide a brief overview of the incident. For example: "At approximately 10:45 PM on 05/02/2024, officers were dispatched to 123 Street in response to a report of a store robbery in progress."]</em></p>
+          <p>-------------------------</p>
+          <br>
+          <p><h2>🕓 Evidence Collected: </h2></p>
+          <p><em>[List physical evidence, photos, videos, etc., with descriptions and locations where they were found. Example: "Bullet casings and serial."]</em></p>
+          <p>-------------------------</p>
+          <br>
+          <p><h2>📝 Statements and Observations: </h2></p>
+          <br>
+          <p><h3>👮 Officers Statement: </h3></p>
+          <p><em>[Detailed account of what the reporting officer observed upon arrival, actions taken, and any notable details about the scene.]</em></p>
+          <br>
+          <p><h3>🧍 Victims Statement: </h3></p>
+          <p><em>[Summary of what the victim reported to the officer.]</em></p>
+          <br>
+          <p><h3>🔭 Witness Statement: </h3></p>
+          <p><em>[Key points from witness statements.]</em></p>
+          <br>
+          <p>-------------------------</p>
+          <p><h2>📋 Actions Taken: </h2></p>
+          <p><em>[Document actions such as arrests, citations, medical assistance provided, evidence collection, or further investigation. Example: "The suspect was detained and transported to MRPD for booking. EMS treated the victim on-site."]</em></p>
+          <p>-------------------------</p>
+          <br>
+          <p>-------------------------</p>
+          <p><h2>📝 Additional Notes: </h2></p>
+          <p><em>[Include any extra details, follow-up plans, or relevant observations not covered above.]</em></p>
+          <p>-------------------------</p>
+          <br>
       </div>
   `;
       $("#manage-incidents-title-input").val(
@@ -1146,15 +1170,30 @@ $(document).ready(() => {
     }
   });
 
+  function sanitizeInput(input) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '/': '&#x2F;',
+    };
+    const reg = /[&<>"'/]/ig;
+    return input.replace(reg, (match) => (map[match]));
+  }
+
   $("#dispatchmsg").keydown(function (e) {
     const keyCode = e.which || e.keyCode;
     if (keyCode === 13 && !e.shiftKey) {
       e.preventDefault();
       const time = new Date();
+     
+      const message = sanitizeInput($(this).val());
       $.post(
         `https://${GetParentResourceName()}/dispatchMessage`,
         JSON.stringify({
-          message: $(this).val(),
+          message: message,
           time: time.getTime(),
         })
       );
@@ -4921,15 +4960,25 @@ window.addEventListener("message", function (event) {
       $(".incidents-person-search-holder").empty();
       $.each(table, function (index, value) {
         let name = value.firstname + " " + value.lastname;
+        let jobStyle = ""
+        let profileType = "Generic"
+        if (value.jobtype == "police") {
+          jobStyle = "police-job"
+          profileType = "Police"
+        } else if (value.jobtype == "ambulance") {
+          jobStyle = "ambulance-job"
+          profileType = "EMS"
+        }
+        //console.log(value.jobtype)
         $(".incidents-person-search-holder").prepend(
           `
-            <div class="incidents-person-search-item" data-info="${name} (#${value.id})" data-cid="${value.id}" data-name="${name}" data-callsign="${value.callsign}">
+            <div class="incidents-person-search-item ${jobStyle}" data-info="${name} (#${value.id})" data-cid="${value.id}" data-name="${name}" data-callsign="${value.callsign}">
                 <img src="${value.profilepic}" class="incidents-person-search-item-pfp">
                 <div class="incidents-person-search-item-right">
                     <div class="incidents-person-search-item-right-cid-title">Citizen ID</div>
                     <div class="incidents-person-search-item-right-cid-input"><span class="fas fa-id-card"></span> ${value.id}</div>
                     <div class="incidents-person-search-item-right-name-title">Name</div>
-                    <div class="incidents-person-search-item-right-name-input"><span class="fas fa-user"></span> ${name}</div>
+                    <div class="incidents-person-search-item-right-name-input"><span class="fas fa-user"></span> ${name}  - Profile Type: ${profileType}</div>
                 </div>
             </div>
           `
@@ -5596,7 +5645,7 @@ function searchProfilesResults(result) {
   result.forEach((value) => {
     let charinfo = value.charinfo;
     let metadata = value.metadata;
-
+    let jobType = value.jobtype;
     if (typeof value.charinfo == "string") {
       charinfo = JSON.parse(charinfo);
     }
@@ -5650,6 +5699,47 @@ function searchProfilesResults(result) {
       value.pp = 'img/not-found.webp'
     }
 
+    if (jobType == "police") {
+    profileHTML += `
+    <div class="profile-item police" data-id="${value.citizenid}" data-fingerprint="${value.fingerprint}">
+        <img src="${value.pp}" class="profile-image">
+        <div style="display: flex; flex-direction: column; margin-top: 2.5px; margin-left: 5px; width: 100%; padding: 5px;">
+        <div style="display: flex; flex-direction: column;">
+            <div class="profile-item-title">${name}</div>
+            <div class="profile-tags">
+                ${licences}
+            </div>
+            <div class="profile-criminal-tags">
+                <span class="license-tag ${warrant}">${value.warrant ? "Active" : "No"} Warrant</span>
+                <span class="license-tag ${convictions}">${value.convictions} Convictions </span>
+            </div>
+        </div>
+        <div class="profile-bottom-info">
+            <div class="profile-id"><span class="fas fa-id-card"></span> Citizen ID: ${value.citizenid}</div>&nbsp;
+        </div>
+        </div>
+    </div>
+    `;}
+    else if (jobType == "ambulance") {
+      profileHTML += `
+    <div class="profile-item ambulance" data-id="${value.citizenid}" data-fingerprint="${value.fingerprint}">
+        <img src="${value.pp}" class="profile-image">
+        <div style="display: flex; flex-direction: column; margin-top: 2.5px; margin-left: 5px; width: 100%; padding: 5px;">
+        <div style="display: flex; flex-direction: column;">
+            <div class="profile-item-title">${name}</div>
+            <div class="profile-tags">
+            </div>
+            <div class="profile-criminal-tags">
+                <span class="profile-label">Medical Profile</span>
+            </div>
+        </div>
+        <div class="profile-bottom-info">
+            <div class="profile-id"><span class="fas fa-id-card"></span> Citizen ID: ${value.citizenid}</div>&nbsp;
+        </div>
+        </div>
+    </div>
+    `;}
+    else
     profileHTML += `
     <div class="profile-item" data-id="${value.citizenid}" data-fingerprint="${value.fingerprint}">
         <img src="${value.pp}" class="profile-image">
@@ -5669,7 +5759,7 @@ function searchProfilesResults(result) {
         </div>
         </div>
     </div>
-`;
+    `;
   });
 
   $(".profile-items").html(profileHTML);

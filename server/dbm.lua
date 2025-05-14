@@ -61,7 +61,7 @@ function GetBulletins(JobType)
 end
 
 function GetPlayerProperties(cid, cb)
-	local result =  MySQL.query.await('SELECT houselocations.label, houselocations.coords FROM player_houses INNER JOIN houselocations ON player_houses.house = houselocations.name where player_houses.citizenid = ?', {cid})
+	local result =  MySQL.query.await('SELECT id,name as label, JSON_UNQUOTE(JSON_EXTRACT(doors, \'$.house[0].coords\')) AS coords FROM tk_housing_properties WHERE owner = ?', {cid})
 	return result
 end
 
@@ -111,7 +111,8 @@ function GetPlayerLicenses(identifier)
                     ['driver'] = false,
                     ['business'] = false,
                     ['weapon'] = false,
-                    ['pilot'] = false
+                    ['pilot'] = false,
+                    ['fishing'] = false,
                 }
             end
         end
@@ -133,6 +134,32 @@ function ManageLicense(identifier, type, status)
             newLicenses[k] = status
         end
         Player.Functions.SetMetaData("licences", newLicenses)
+
+        if type == 'driver' then
+            if status == true then
+                exports['cs_idcard']:RegisterCard(source, 'driver_license', false)
+            else
+                exports['cs_idcard']:RemoveCard(source, 'driver_license')
+            end
+        elseif type == 'weapon' then
+            if status == true then
+                exports['cs_idcard']:RegisterCard(source, 'weaponlicense', false)
+            else
+                exports['cs_idcard']:RemoveCard(source, 'weaponlicense')
+            end
+        elseif type == 'fishing' then
+            if status == true then
+                exports['cs_idcard']:RegisterCard(source, 'fishinglicense', false)
+            else
+                exports['cs_idcard']:RemoveCard(source, 'fishinglicense')
+            end
+        elseif type == 'hunting' then
+            if status == true then
+                exports['cs_idcard']:RegisterCard(source, 'huntinglicense', false)
+            else
+                exports['cs_idcard']:RemoveCard(source, 'huntinglicense')
+            end
+        end
     else
         local licenseType = '$.licences.'..type
         local result = MySQL.query.await('UPDATE `players` SET `metadata` = JSON_REPLACE(`metadata`, ?, ?) WHERE `citizenid` = ?', {licenseType, licenseStatus, identifier}) --seems to not work on older MYSQL versions, think about alternative
@@ -152,7 +179,8 @@ function UpdateAllLicenses(identifier, incomingLicenses)
             ['driver'] = true,
             ['business'] = false,
             ['weapon'] = false,
-            ['pilot'] = false
+            ['pilot'] = false,
+            ['fishing'] = true
         }
 
         for k, _ in pairs(incomingLicenses) do

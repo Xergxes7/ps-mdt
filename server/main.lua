@@ -82,39 +82,33 @@ RegisterServerEvent("ps-mdt:dispatchStatus", function(bool)
 	isDispatchRunning = bool
 end)
 
-RegisterNetEvent("wk:onPlateScanned")
-AddEventHandler("wk:onPlateScanned", function(cam, plate, index)
-	--print('PLATE SCANNED' .. plate)
-	plate = string.gsub(plate, "^%s*(.-)%s*$", "%1")
-	--print('PLATE SCANNED' .. plate)
-	if Config.UseWolfknightRadar == true then
-			
-			local src = source
-			local Player = QBCore.Functions.GetPlayer(src)
-			local PlayerData = GetPlayerData(src)
-			local vehicleOwner = GetVehicleOwner(plate)
-			if not vehicleOwner then vehicleOwner = 'REDACTED' end
-			local bolo, title, boloId = GetBoloStatus(plate)
-			local warrant, owner, incidentId = GetWarrantStatus(plate)
-			local driversLicense = PlayerData.metadata['licences'].driver
-			--print(bolo)
-			if bolo == true then
-				TriggerClientEvent('QBCore:Notify', src, 'BOLO ID: '..boloId..' | Title: '..title..' | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
-			end
-			if warrant == true then
-				TriggerClientEvent('QBCore:Notify', src, 'WANTED - INCIDENT ID: '..incidentId..' | Registered Owner: '..owner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
-			end
+if Config.UseWolfknightRadar == true then
+	RegisterNetEvent("wk:onPlateScanned")
+	AddEventHandler("wk:onPlateScanned", function(cam, plate, index)
+		local src = source
+		local Player = QBCore.Functions.GetPlayer(src)
+		local PlayerData = GetPlayerData(src)
+		local vehicleOwner = GetVehicleOwner(plate)
+		local bolo, title, boloId = GetBoloStatus(plate)
+		local warrant, owner, incidentId = GetWarrantStatus(plate)
+		local driversLicense = PlayerData.metadata['licences'].driver
 
-			if Config.PlateScanForDriversLicense and driversLicense == false and vehicleOwner then
-				TriggerClientEvent('QBCore:Notify', src, 'NO DRIVERS LICENCE | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
-			end
+		if bolo == true then
+			TriggerClientEvent('QBCore:Notify', src, 'BOLO ID: '..boloId..' | Title: '..title..' | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
+		end
+		if warrant == true then
+			TriggerClientEvent('QBCore:Notify', src, 'WANTED - INCIDENT ID: '..incidentId..' | Registered Owner: '..owner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
+		end
 
-			if bolo or warrant or (Config.PlateScanForDriversLicense and not driversLicense) and vehicleOwner then
-				TriggerClientEvent("wk:togglePlateLock", src, cam, true, 1)
-			end
+		if Config.PlateScanForDriversLicense and driversLicense == false and vehicleOwner then
+			TriggerClientEvent('QBCore:Notify', src, 'NO DRIVERS LICENCE | Registered Owner: '..vehicleOwner..' | Plate: '..plate, 'error', Config.WolfknightNotifyTime)
+		end
 
-	end
-end)
+		if bolo or warrant or (Config.PlateScanForDriversLicense and not driversLicense) and vehicleOwner then
+			TriggerClientEvent("wk:togglePlateLock", src, cam, true, 1)
+		end
+	end)
+end
 
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
@@ -284,8 +278,9 @@ QBCore.Functions.CreateCallback('mdt:server:SearchProfile', function(source, cb,
     local Player = QBCore.Functions.GetPlayer(src)
     if Player then
         local JobType = GetJobType(Player.PlayerData.job.name)
+		--print(JobType)
         if JobType ~= nil then
-            local people = MySQL.query.await("SELECT p.citizenid, p.charinfo, md.pfp, md.fingerprint FROM players p LEFT JOIN mdt_data md on p.citizenid = md.cid WHERE LOWER(CONCAT(JSON_VALUE(p.charinfo, '$.firstname'), ' ', JSON_VALUE(p.charinfo, '$.lastname'))) LIKE :query OR LOWER(`charinfo`) LIKE :query OR LOWER(`citizenid`) LIKE :query OR LOWER(md.fingerprint) LIKE :query AND jobtype = :jobtype LIMIT 20", { query = string.lower('%'..sentData..'%'), jobtype = JobType })
+            local people = MySQL.query.await("SELECT p.citizenid, p.charinfo, md.pfp, md.fingerprint,md.jobtype FROM players p LEFT JOIN mdt_data md on p.citizenid = md.cid WHERE LOWER(CONCAT(JSON_VALUE(p.charinfo, '$.firstname'), ' ', JSON_VALUE(p.charinfo, '$.lastname'))) LIKE :query OR LOWER(md.tags) LIKE :query OR LOWER(md.information) LIKE :query OR LOWER(`charinfo`) LIKE :query OR LOWER(`citizenid`) LIKE :query OR LOWER(md.fingerprint) LIKE :query AND jobtype = :jobtype LIMIT 20", { query = string.lower('%'..sentData..'%'), jobtype = JobType })
             local citizenIds = {}
             local citizenIdIndexMap = {}
             if not next(people) then cb({}) return end
@@ -295,6 +290,7 @@ QBCore.Functions.CreateCallback('mdt:server:SearchProfile', function(source, cb,
                 people[index]['convictions'] = 0
                 people[index]['licences'] = GetPlayerLicenses(data.citizenid)
                 people[index]['pp'] = ProfPic(data.gender, data.pfp)
+				
 				if data.fingerprint and data.fingerprint ~= "" then
 					people[index]['fingerprint'] = data.fingerprint
 				else
@@ -471,7 +467,6 @@ QBCore.Functions.CreateCallback('mdt:server:GetProfileData', function(source, cb
 		job = job.label,
 		grade = grade.name,
 		apartment = apartmentData,
-		apartmenttest = apartmentTestData,
 		pp = ProfPic(target.charinfo.gender),
 		licences = licencesdata,
 		dob = target.charinfo.birthdate,
@@ -568,10 +563,12 @@ QBCore.Functions.CreateCallback('mdt:server:GetProfileData', function(source, cb
 				}
 			end
 			for index = 1, #Coords, 1 do
-				Houses[#Houses+1] = {
-					label = properties[index]["label"],
-					coords = tostring(Coords[index]["coords"]["enter"]["x"]..",".. Coords[index]["coords"]["enter"]["y"].. ",".. Coords[index]["coords"]["enter"]["z"]),
-				}
+				local tempCoords = Coords[index]["coords"]
+				local zoneName = ""
+					Houses[#Houses+1] = {
+						label = properties[index]["label"] .." #" .. properties[index]["id"],
+						coords = tostring(Coords[index]["coords"]["x"]..",".. Coords[index]["coords"]["y"].. ",".. Coords[index]["coords"]["z"]),
+					}
 			end
 			person.properties = Houses
 		end
@@ -583,7 +580,7 @@ QBCore.Functions.CreateCallback('mdt:server:GetProfileData', function(source, cb
 		person.tags = json.decode(mdtData.tags)
 		person.gallery = json.decode(mdtData.gallery)
 		person.fingerprint = mdtData.fingerprint
-		print("Fetched fingerprint from mdt_data:", mdtData.fingerprint)
+		--print("Fetched fingerprint from mdt_data:", mdtData.fingerprint)
 	end
 
 	return cb(person)
@@ -905,7 +902,7 @@ RegisterNetEvent('mdt:server:incidentSearchPerson', function(query)
                     return "img/male.png"
                 end
 
-                local result = MySQL.query.await("SELECT p.citizenid, p.charinfo, p.metadata, md.pfp from players p LEFT JOIN mdt_data md on p.citizenid = md.cid WHERE LOWER(CONCAT(JSON_VALUE(p.charinfo, '$.firstname'), ' ', JSON_VALUE(p.charinfo, '$.lastname'))) LIKE :query OR LOWER(`charinfo`) LIKE :query OR LOWER(`citizenid`) LIKE :query OR LOWER(md.fingerprint) LIKE :query AND jobtype = :jobtype LIMIT 30", {
+                local result = MySQL.query.await("SELECT p.citizenid, p.charinfo, p.metadata, md.pfp,md.jobtype from players p LEFT JOIN mdt_data md on p.citizenid = md.cid WHERE LOWER(CONCAT(JSON_VALUE(p.charinfo, '$.firstname'), ' ', JSON_VALUE(p.charinfo, '$.lastname'))) LIKE :query OR LOWER(`charinfo`) LIKE :query OR LOWER(`citizenid`) LIKE :query OR LOWER(md.fingerprint) LIKE :query AND jobtype = :jobtype LIMIT 30", {
 					query = string.lower('%'..query..'%'),
                     jobtype = JobType
                 })
@@ -919,7 +916,8 @@ RegisterNetEvent('mdt:server:incidentSearchPerson', function(query)
                         firstname = charinfo.firstname,
                         lastname = charinfo.lastname,
                         profilepic = ProfPic(charinfo.gender, result[i].pfp),
-                        callsign = metadata.callsign
+                        callsign = metadata.callsign,
+						jobtype = result[i].jobtype,
                     }
                 end
                 TriggerClientEvent('mdt:client:incidentSearchPerson', src, data)
@@ -1849,7 +1847,6 @@ function GetVehicleOwner(plate)
 	local result = MySQL.query.await('SELECT plate, citizenid, id FROM player_vehicles WHERE plate = @plate', {['@plate'] = plate})
 	if result and result[1] then
 		local citizenid = result[1]['citizenid']
-		--print(citizenid)
 		local Player = QBCore.Functions.GetPlayerByCitizenId(citizenid)
 		local owner = Player.PlayerData.charinfo.firstname.." "..Player.PlayerData.charinfo.lastname
 		return owner
@@ -2111,7 +2108,7 @@ end
 function GetPlayerPropertiesByCitizenId(citizenid)
     local properties = {}
 
-    local result = MySQL.Sync.fetchAll("SELECT * FROM owned_houses WHERE owner = @citizenid", {
+    local result = MySQL.Sync.fetchAll("SELECT * FROM tk_housing_properties WHERE owner = @citizenid", {
         ['@citizenid'] = citizenid
     })
 
@@ -2121,7 +2118,7 @@ function GetPlayerPropertiesByCitizenId(citizenid)
         end
     end
 
-    return result
+    return properties
 end
 
 function generateMessageFromResult(result)

@@ -964,6 +964,19 @@ a {
 
 }
 
+.profile-item.ambulance {
+    border: 2px solid red;
+}
+
+.profile-item.police {
+    border: 2px solid blue;
+}
+
+.profile-label {
+    font-weight: bold;
+    text-shadow: 1px 1px 2px white;
+}
+
 .profile-item:hover {
     background-color: var(--color-3);
 }
@@ -2951,6 +2964,14 @@ span.tag-incident-input[contenteditable]:empty::before {
     height: 12.5vh;
     display: flex;
     flex-direction: row;
+}
+
+.incidents-person-search-item.police-job {
+    border: 2px solid blue;
+}
+
+.incidents-person-search-item.ambulance-job {
+    border: 2px solid red;
 }
 
 .incidents-person-search-item:hover {
