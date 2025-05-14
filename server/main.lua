@@ -1065,15 +1065,15 @@ QBCore.Functions.CreateCallback('mdt:server:SearchVehicles', function(source, cb
 				elseif value.state == 2 then
 					value.state = "Impounded"
 				end]]
-				if not value.in_garage then
-					value.state = "Out"
-					--print('OUT')
+				if string.find(string.lower(value.garage_id), "impound") then
+					value.state = "Impounded"
+					--print('Impounded')
 				elseif value.in_garage == 1 and not string.find(string.lower(value.garage_id), "impound") then
 					value.state = "Garaged"
 					--print('Garaged')
-				elseif value.in_garage and string.find(string.lower(value.garage_id), "impound") then
-					value.state = "Impounded"
-					--print('Impounded')
+				elseif not value.in_garage then
+					value.state = "Out"
+					--print('OUT')
 				end
 
 
@@ -1119,7 +1119,7 @@ RegisterNetEvent('mdt:server:getVehicleData', function(plate)
 					--print(vehicle[1].in_garage)
 					--print(vehicle[1].garage_id)
 					--print(string.find(string.lower(vehicle[1].garage_id), "impound"))
-					if vehicle[1].in_garage and string.find(string.lower(vehicle[1].garage_id), "impound") then
+					if string.find(string.lower(vehicle[1].garage_id), "impound") then
 						vehicle[1]['impound'] = true
 					end
 
