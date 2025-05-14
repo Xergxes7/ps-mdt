@@ -10,7 +10,7 @@ THIS CUSTOMISATION IS LIKELY NOT GOING TO BE SUPPORTED BY PROJECT SLOTH
 - [oxmysql](https://github.com/overextended/oxmysql)
 - [qb-apartments](https://github.com/qbcore-framework/qb-apartments)
 - [qb-communityservice](https://github.com/Zepherlah/qb-community-service) - If you're planning on sending to community service. 
-- [tk_housing V2](https://forum.cfx.re/t/qb-qb-tk-housing-housing-system/5184700) - This version uses this housing system
+- [[tk_housing V2](https://forum.cfx.re/t/advanced-housing-system-tk-housing-v2/5311897) - This version uses this housing system
 - [pickle prisons](https://forum.cfx.re/t/free-pickles-prisons-jail-system-breakouts-work-activities/5105310) - This version uses this prison system
 - [jg-advancedgarages](https://jgscripts.com/scripts/advanced-garages) - This version uses this garage system
 - [CS Id Cards](https://forum.cfx.re/t/advanced-job-badge-id-card-expiry-feature-create-unlimited-ids-qb-esx/4999899) - This version integrates with this license card system
